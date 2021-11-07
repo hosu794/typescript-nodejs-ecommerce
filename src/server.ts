@@ -1,9 +1,10 @@
 import * as bodyParser from 'body-parser'
-import * as cookieParser from 'cookie-parser'
+import cookieParser from 'cookie-parser'
 import express from 'express';
 
 import DatabaseConnection from './config/database'
-import { IDatabaseConnection } from './types/database';
+import Controller from './interfaces/controller.interface';
+import PaypalRestApiConfig from './paypal/paypal.config';
 
 class App {
     private app: express.Application
@@ -13,6 +14,12 @@ class App {
         this.app = express()
         this.database = new DatabaseConnection().getDB()
         this.listen()
+
+
+        this.intitializeMiddlewares();
+        this.initializeControllers(controllers);
+        this.initializeErrorHandling();
+        const paypal: PaypalRestApiConfig = new PaypalRestApiConfig()
     }
 
     public listen(): void {
@@ -21,8 +28,23 @@ class App {
         })
     }
 
+    private initializeErrorHandling() {
+
+    }
+
+    private intitializeMiddlewares() {
+        this.app.use(bodyParser.json())
+        this.app.use(cookieParser())
+    }
+
     public getServer(): express.Application {
         return this.app
+    }
+
+    private initializeControllers(controllers: Controller[]) {
+        controllers.forEach(controller => {
+            this.app.use('/', controller.router)
+        })
     }
 
 }
