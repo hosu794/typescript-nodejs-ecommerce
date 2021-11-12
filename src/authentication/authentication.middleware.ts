@@ -1,22 +1,22 @@
 import express from "express";
 import jwt, { JwtPayload } from 'jsonwebtoken'; 
 
-interface ExpressRequestWithUser extends express.Request {
-    userId: string; 
+interface TokenInteface {
+      verifyToken(request: express.Request, response: express.Response, next: express.NextFunction): Promise<void>;
+      extractToken(req: express.Request): any;
 }
 
-interface JwtPayloadWithUserID extends JwtPayload {
-    id: number; 
-}
+let Token: TokenInteface;
 
-export const verifyToken = async (request: express.Request, response: express.Response, next: express.NextFunction): Promise<void> => {
+Token = class Token {
 
-        const token: any = extractToken(request); 
+    static verifyToken = async (request: express.Request, response: express.Response, next: express.NextFunction): Promise<void> => {
+
+        const token: any = this.extractToken(request); 
         
         try {
 
             const vericationResponse: string | JwtPayload = jwt.verify(token, 'secret'); 
-
             //@ts-ignore
             request.user = vericationResponse;
             
@@ -25,13 +25,17 @@ export const verifyToken = async (request: express.Request, response: express.Re
             response.status(401).json({message: 'Wrong token!'}); 
             next(); 
         }
+    }
+
+    static extractToken (req: express.Request) {
+        if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
+            return req.headers.authorization.split(' ')[1];
+        } else if (req.query && req.query.token) {
+            return req.query.token;
+        }
+        return null;
+    }
+
 }
 
-function extractToken (req: express.Request) {
-    if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
-        return req.headers.authorization.split(' ')[1];
-    } else if (req.query && req.query.token) {
-        return req.query.token;
-    }
-    return null;
-}
+export default Token; 

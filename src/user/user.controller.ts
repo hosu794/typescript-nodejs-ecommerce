@@ -4,6 +4,7 @@ import Controller from "../interfaces/controller.interface";
 import { UserRequest } from "./user.interface";
 
 import bcrypt from 'bcrypt'
+import Token from '../authentication/authentication.middleware';
 
 class UserController implements Controller {
 
@@ -15,7 +16,7 @@ class UserController implements Controller {
     public router: Router = Router(); 
 
     private initializeRoutes() {
-        this.router.get(this.path, this.getAllUsers)
+        this.router.get(this.path, Token.verifyToken, this.getAllUsers)
     }
 
     private getAllUsers = async (request: Request, response: Response, next: NextFunction) => {

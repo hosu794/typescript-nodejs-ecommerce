@@ -6,9 +6,7 @@ import Pool from 'pg'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'; 
 import { TokenMessage, UserLogin } from "./authentication.interface";
-import { verifyToken } from "./authentication.middleware";
-
-
+import Token from "./authentication.middleware";
 
 class AuthenticationController implements Controller {
     constructor() {
@@ -21,52 +19,30 @@ class AuthenticationController implements Controller {
     private initializeRoutes() {
         this.router.post(`${this.path}/register`, this.registerUser); 
         this.router.post(`${this.path}/login`, this.loginUser);
-        this.router.get(`${this.path}/token`, verifyToken,this.getToken);  
+        this.router.get(`${this.path}/token`, Token.verifyToken ,this.getToken);  
     }
 
     private registerUser = async (request: express.Request, response: express.Response) => {
-
         const newUser: UserRequest | any = request.body;
 
         const database = new DatabaseConnection().getDB();
 
-        database.query("SELECT * FROM WHERE user_email = $1", [newUser.email], async (error, results) => {
-            if(!results) {
-                console.log("User doesn't exist!")
+        const hashedPassword: string = await bcrypt.hashSync(newUser.password, 10);
 
-                const hashedPassword: string = await bcrypt.hashSync(newUser.password, 10);
+        await database.query("INSERT INTO users (user_firstname, user_lastname, user_nickname, user_password) VALUES ($1, $2, $3 , $4)", [newUser.firstname, newUser.lastname, newUser.nickname, hashedPassword]);
 
-                database.query("INSERT INTO users (user_firstname, user_lastname, user_nickname, user_password) VALUES ($1, $2, $3 , $4)", [newUser.firstname, newUser.lastname, newUser.nickname, hashedPassword] ,(error, results) => {
+        const {rowCount, rows} = await database.query("SELECT user_id FROM users WHERE user_nickname = $1", [newUser.nickname]);
 
-                    if(error) {
-                        throw error
-                    }
+        if(rowCount === 0) response.status(401).json({message: 'User exists!'}); 
 
-                    database.query("SELECT user_id FROM users WHERE user_nickname = $1", [newUser.nickname], (error, results) => {
-                        if (error) {
-                            throw error
-                        }
+        database.query("INSERT INTO users (user_firstname, user_lastname, user_nickname, user_password) VALUES ($1, $2, $3 , $4)", [newUser.firstname, newUser.lastname, newUser.nickname, hashedPassword]);
 
-                        const user_id: number = results.rows[0].user_id;
-                        
-                        database.query("INSERT INTO addresses (user_id, country, province, city, street, street_number, post_code) VALUES ($1, $2, $3, $4, $5, $6, $7) ", [user_id, newUser.country, newUser.province, newUser.city, newUser.street, newUser.street_number, newUser.post_code], (error, results) => {
-                            
-                            if(error) {
-                                throw error
-                            }
+        const user_id: number = rows[0].user_id;
 
-                            response.status(201).json({message: 'User has created successfully'})
+        await database.query("INSERT INTO addresses (user_id, country, province, city, street, street_number, post_code) VALUES ($1, $2, $3, $4, $5, $6, $7) ", [user_id, newUser.country, newUser.province, newUser.city, newUser.street, newUser.street_number, newUser.post_code]);
 
-                        })
-
-                    })
-
-
-                })
-
-            }
-        })
-
+        response.status(201).json({message: "User has created successfully!"}); 
+    
     }
 
     private loginUser = async (request: express.Request, response: express.Response) => {
@@ -92,7 +68,7 @@ class AuthenticationController implements Controller {
         }); 
 
         response.status(200).json({
-            message: 'Token created successfully!', token
+            message: 'Token created bsuccessfully!', token
         })
     }
 
