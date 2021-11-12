@@ -2,7 +2,6 @@ import { request, Request, Response, Router } from "express";
 import Controller from "../interfaces/controller.interface";
 import paypal, { payment } from 'paypal-rest-sdk'
 
-
 class PaypalController implements Controller {
 
     constructor() {

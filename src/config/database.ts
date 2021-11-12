@@ -15,13 +15,6 @@ class DatabaseConnection implements IDatabaseConnection {
             port: 5432,
         })
 
-        this.db.query("SELECT * FROM films", (error: any, results: any) => {
-            if(error) {
-                throw error
-            }
-
-            console.log(results.rows)
-        })
     }
 
     public getDB(): Pool.Pool {
