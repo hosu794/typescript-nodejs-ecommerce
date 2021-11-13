@@ -13,7 +13,8 @@ class CategoryController implements Controller {
     database: any;
 
     constructor() {
-        this.database = new DatabaseConnection().getDB(); 
+        this.database = new DatabaseConnection().getDB();
+        this.initializeControllers();  
     }
 
     private initializeControllers() {

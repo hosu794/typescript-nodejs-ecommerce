@@ -1,7 +1,6 @@
 import express from "express";
 import DatabaseConnection from "../config/database";
 import Controller from "../interfaces/controller.interface";
-import { UserRequest } from "../user/user.interface";
 import Pool from 'pg'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'; 
@@ -23,23 +22,24 @@ class AuthenticationController implements Controller {
     }
 
     private registerUser = async (request: express.Request, response: express.Response) => {
-        const newUser: UserRequest | any = request.body;
+        const newUser:  any = request.body;
 
         const database = new DatabaseConnection().getDB();
 
-        const hashedPassword: string = await bcrypt.hashSync(newUser.password, 10);
+        const hashedPassword: string = bcrypt.hashSync(newUser.password, 10);
+
+        const resultsOfExistedUser = await database.query("SELECT user_id FROM users WHERE user_nickname = $1", [newUser.nickname]);
+
+        if(resultsOfExistedUser.rowCount !== 0) response.status(400).json({message: 'User exists with this nickname!'}); 
 
         await database.query("INSERT INTO users (user_firstname, user_lastname, user_nickname, user_password) VALUES ($1, $2, $3 , $4)", [newUser.firstname, newUser.lastname, newUser.nickname, hashedPassword]);
-
         const {rowCount, rows} = await database.query("SELECT user_id FROM users WHERE user_nickname = $1", [newUser.nickname]);
-
-        if(rowCount === 0) response.status(401).json({message: 'User exists!'}); 
-
-        database.query("INSERT INTO users (user_firstname, user_lastname, user_nickname, user_password) VALUES ($1, $2, $3 , $4)", [newUser.firstname, newUser.lastname, newUser.nickname, hashedPassword]);
-
+        
         const user_id: number = rows[0].user_id;
 
         await database.query("INSERT INTO addresses (user_id, country, province, city, street, street_number, post_code) VALUES ($1, $2, $3, $4, $5, $6, $7) ", [user_id, newUser.country, newUser.province, newUser.city, newUser.street, newUser.street_number, newUser.post_code]);
+
+        await database.query("INSERT INTO roles (user_id, title) VALUES ($1, $2)", [user_id, "USER"]); 
 
         response.status(201).json({message: "User has created successfully!"}); 
     

@@ -1,10 +1,8 @@
 import paypal from 'paypal-rest-sdk'
 
-
 class PaypalRestApiConfig {
 
-
-    private paypal: any; 
+    private paypal: string; 
 
     constructor() {
         this.paypal = paypal.configure({

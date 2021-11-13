@@ -1,10 +1,7 @@
 import express from "express";
 import jwt, { JwtPayload } from 'jsonwebtoken'; 
-
-interface TokenInteface {
-      verifyToken(request: express.Request, response: express.Response, next: express.NextFunction): Promise<void>;
-      extractToken(req: express.Request): any;
-}
+import DatabaseConnection from "../config/database";
+import { TokenInteface } from "./authentication.interface";
 
 let Token: TokenInteface;
 
@@ -34,6 +31,25 @@ Token = class Token {
             return req.query.token;
         }
         return null;
+    }
+
+    static checkRole = (roles: Array<string>) => {
+        return async (request: express.Request, response: express.Response, next: express.NextFunction) => {
+
+            const token: any = this.extractToken(request); 
+
+            const tokenResponse: string | JwtPayload = jwt.verify(token, 'secret'); 
+
+            const database = new DatabaseConnection().getDB(); 
+            
+            const sqlQuery: string = "SELECT roles.title FROM users WHERE user_id = $1 JOIN roles ON users.user_id = roles.user_id"; 
+
+
+            //@ts-ignore
+            const results = await database.query(sqlQuery, [tokenResponse.id]);
+
+
+        }
     }
 
 }

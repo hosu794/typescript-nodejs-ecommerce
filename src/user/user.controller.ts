@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response, Router } from "express";
 import DatabaseConnection from "../config/database";
 import Controller from "../interfaces/controller.interface";
-import { UserRequest } from "./user.interface";
 
 import bcrypt from 'bcrypt'
 import Token from '../authentication/authentication.middleware';
