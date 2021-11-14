@@ -1,5 +1,6 @@
 import express from "express";
 import jwt, { JwtPayload } from 'jsonwebtoken'; 
+import { consumers } from "stream";
 import DatabaseConnection from "../config/database";
 import { TokenInteface } from "./authentication.interface";
 
@@ -33,7 +34,7 @@ Token = class Token {
         return null;
     }
 
-    static checkRole = (roles: Array<string>) => {
+    static checkRole (roles: Array<string>) {
         return async (request: express.Request, response: express.Response, next: express.NextFunction) => {
 
             const token: any = this.extractToken(request); 
@@ -42,12 +43,15 @@ Token = class Token {
 
             const database = new DatabaseConnection().getDB(); 
             
-            const sqlQuery: string = "SELECT roles.title FROM users WHERE user_id = $1 JOIN roles ON users.user_id = roles.user_id"; 
-
+            const sqlQuery: string = "SELECT roles.title FROM users JOIN roles ON users.user_id = roles.user_id WHERE users.user_id = $1"; 
 
             //@ts-ignore
-            const results = await database.query(sqlQuery, [tokenResponse.id]);
+            const results: any = await database.query(sqlQuery, [tokenResponse.id]);
 
+            console.log(roles.indexOf(results.rows[0].title))
+
+           if(roles.indexOf(results.rows[0].title) > -1 ) next();
+           else response.sendStatus(401).send(); 
 
         }
     }

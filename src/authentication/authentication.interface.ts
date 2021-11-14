@@ -14,4 +14,5 @@ export interface TokenMessage {
 export interface TokenInteface {
     verifyToken(request: express.Request, response: express.Response, next: express.NextFunction): Promise<void>;
     extractToken(req: express.Request): any;
+    checkRole(roles: Array<string>): any; 
 }

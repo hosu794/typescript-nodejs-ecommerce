@@ -4,7 +4,7 @@ import Controller from "../interfaces/controller.interface";
 import Pool from 'pg'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'; 
-import { TokenMessage, UserLogin } from "./authentication.interface";
+import {  UserLogin } from "./authentication.interface";
 import Token from "./authentication.middleware";
 
 class AuthenticationController implements Controller {
