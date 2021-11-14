@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response, Router } from "express";
 import DatabaseConnection from "../config/database";
 import Controller from "../interfaces/controller.interface";
-import { UserRequest } from "./user.interface";
 
 import bcrypt from 'bcrypt'
 import Token from '../authentication/authentication.middleware';
@@ -16,7 +15,7 @@ class UserController implements Controller {
     public router: Router = Router(); 
 
     private initializeRoutes() {
-        this.router.get(this.path, Token.verifyToken, this.getAllUsers)
+        this.router.get(this.path,  [Token.verifyToken, Token.checkRole(["ADMIN"])], this.getAllUsers)
     }
 
     private getAllUsers = async (request: Request, response: Response, next: NextFunction) => {
@@ -29,9 +28,7 @@ class UserController implements Controller {
                 } 
                 response.status(200).json(results.rows)
             })
-
     }
-
 
 }
 

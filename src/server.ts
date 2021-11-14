@@ -8,11 +8,9 @@ import PaypalRestApiConfig from './paypal/paypal.config';
 
 class App {
     private app: express.Application
-    private database: any; 
 
     constructor(controllers: any) {
         this.app = express()
-        this.database = new DatabaseConnection().getDB()
         this.listen()
 
 
