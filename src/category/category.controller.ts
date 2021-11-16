@@ -108,7 +108,6 @@ class CategoryController implements Controller {
 
     }
 
-
 }
 
 export default CategoryController; 
