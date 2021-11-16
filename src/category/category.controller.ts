@@ -4,7 +4,8 @@ import Controller from "../interfaces/controller.interface";
 import express from 'express'; 
 import DatabaseConnection from "../config/database";
 
-import Pool from 'pg'
+import Token from "../authentication/authentication.middleware";
+import { CategoryQueryResponse, CategoryRequest, CategoryResponse } from "./category.interfaces";
 
 class CategoryController implements Controller {
     public readonly path: string = '/categories'; 
@@ -18,39 +19,95 @@ class CategoryController implements Controller {
     }
 
     private initializeControllers() {
-        this.router.get(`${this.path}`, this.getAllCategories); 
-        this.router.get(`${this.path}/:id`, this.getCategoryById); 
+        this.router.get(`${this.path}`, [Token.verifyToken, Token.checkRole(['ADMIN'])],  this.getAllCategories); 
+        this.router.get(`${this.path}/:id`,[Token.verifyToken, Token.checkRole(['ADMIN'])]  ,this.getCategoryById); 
+        this.router.post(`${this.path}`, [Token.verifyToken, Token.checkRole(['ADMIN'])], this.createCategory); 
+        this.router.put(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(['ADMIN'])], this.updateCategory); 
+        this.router.delete(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(['ADMIN'])], this.deleteCategory); 
     }
 
     getAllCategories = async (request: express.Request, response: express.Response) => {
 
-    const sqlQuery: string = "SELECT * FROM categories"; 
+        const sqlQuery: string = "SELECT * FROM categories"; 
 
-    const { rows } = await this.database.query(sqlQuery); 
+        const { rows: categories } = await this.database.query(sqlQuery); 
 
-    if(rows) {
-        response.sendStatus(200).json({
-            categories: rows
-        })
-    } else {
-
-        response.sendStatus(401).json({message: 'Categories not found!'}); 
-
-    }
+        response.json({categories}); 
 
     }
 
     getCategoryById = async (request: express.Request, response: express.Response) => {
 
-        const userId: number = Number(request.params.id); 
+        const categoryId: number = Number(request.params.id); 
 
         const sqlQuery: string = "SELECT * FROM categories WHERE category_id = $1"; 
 
-        const result  = await this.database(sqlQuery, [userId]);
+        const results: any  = await this.database.query(sqlQuery, [categoryId]);
 
-        console.log(result); 
+        response.json({
+            record: results.rows[0]
+        })
 
     }
+
+    createCategory = async (request: express.Request, response: express.Response) => {
+        const categoryRequest: CategoryRequest = request.body;
+        
+        const sqlQueryToCheckIsExists: string = "SELECT * FROM categories WHERE title = $1"; 
+
+        const {rowCount}: CategoryQueryResponse = await this.database.query(sqlQueryToCheckIsExists, [categoryRequest.title]); 
+
+        if(rowCount > 0) response.sendStatus(401).json({message: 'Category with this title is exists!'}); 
+
+        const sqlQueryToCreateCategory: string = "INSERT INTO categories(title) VALUES($1)";
+
+        await this.database.query(sqlQueryToCreateCategory, [categoryRequest.title]); 
+
+        response.sendStatus(201).json({message: 'Category created successfully!'}); 
+    }
+
+    updateCategory = async (request: express.Request, response: express.Response) => {
+        
+        const categoryUpdateRequest: CategoryRequest = request.body;
+        
+        const categoryId = Number(request.params.id);
+
+        if(!categoryId && typeof categoryId !== "number") response.sendStatus(401).json({message: 'Wrong request params!'});  
+
+        const sqlRequestToCheckIfExists = "SELECT * FROM categories WHERE category_id = $1"; 
+
+        const results: any = await this.database.query(sqlRequestToCheckIfExists, [categoryId]); 
+
+        if(results.rowCount === 0) response.sendStatus(404).json({message: "Not found!"});
+
+        const sqlQueryToUpdateCategory: string = "UPDATE categories SET title = $1 WHERE category_id = $2"; 
+    
+        await this.database.query(sqlQueryToUpdateCategory, [categoryUpdateRequest.title, categoryId]);     
+
+        response.json({message: 'Record has updated successfully'}); 
+
+    }
+
+    deleteCategory = async (request: express.Request, response: express.Response) => {
+    
+        const categoryId = Number(request.params.id);
+
+        if(!categoryId && typeof categoryId === 'number') response.sendStatus(401).json({message: 'Wrong request params!'}); 
+
+        const sqlRequestToCheckIfExists = "SELECT * FROM categories WHERE category_id = $1"; 
+
+        let results: any = await this.database.query(sqlRequestToCheckIfExists, [categoryId]);
+
+        if(results.rowCount === 0) response.status(404).json({message: 'Category not found!'}); 
+
+        const sqlQueryToDeleteRequest: string = "DELETE FROM categories WHERE category_id = $1"; 
+
+        await this.database.query(sqlQueryToDeleteRequest, [categoryId]);
+
+        response.json({message: 'Record has deleted successfully'}); 
+
+    }
+
 
 }
 
