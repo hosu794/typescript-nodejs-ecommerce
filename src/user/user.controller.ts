@@ -15,7 +15,7 @@ class UserController implements Controller {
     public router: Router = Router(); 
 
     private initializeRoutes() {
-        this.router.get(this.path,  [Token.verifyToken, Token.checkRole(["ADMIN"])], this.getAllUsers)
+        this.router.get(this.path,  [Token.verifyToken, Token.checkRole(["USER"])], this.getAllUsers)
     }
 
     private getAllUsers = async (request: Request, response: Response, next: NextFunction) => {

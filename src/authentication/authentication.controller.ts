@@ -18,7 +18,6 @@ class AuthenticationController implements Controller {
     private initializeRoutes() {
         this.router.post(`${this.path}/register`, this.registerUser); 
         this.router.post(`${this.path}/login`, this.loginUser);
-        this.router.get(`${this.path}/token`, Token.verifyToken ,this.getToken);  
     }
 
     private registerUser = async (request: express.Request, response: express.Response) => {
@@ -72,12 +71,7 @@ class AuthenticationController implements Controller {
         })
     }
 
-    private getToken = async (request: express.Request, response: express.Response)  => {
-
-        //@ts-ignore
-        response.json(request.user).status(200); 
-
-    }
+    
 
 
 }
