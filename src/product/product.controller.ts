@@ -20,6 +20,7 @@ class ProductController implements Controller {
         this.router.get(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(["ADMIN"])], this.getProductById);
         this.router.put(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(["ADMIN"])], this.updateProduct); 
         this.router.delete(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(["ADMIN"])], this.deleteProduct); 
+        this.router.get(`${this.path}/categories/:id`, this.getProductsByCategoryId); 
     }
 
     getAllProducts = async (request: express.Request, response: express.Response) => {
@@ -116,7 +117,25 @@ class ProductController implements Controller {
         response.json({message: 'Record has deleted successfully'}); 
     }
 
+    getProductsByCategoryId = async (request: express.Request, response: express.Response) => {
+        
+        const database = new DatabaseConnection().getDB(); 
 
+        const categoryId = Number(request.params.id); 
+
+        const sqlRequestToCheckIfCategoryExists = "SELECT * FROM categories WHERE category_id = $1"; 
+
+        let results: any = await database.query(sqlRequestToCheckIfCategoryExists, [categoryId]); 
+
+        if(results.rowCount === 0) response.status(404).json({message: 'Category not exsits!'}); 
+
+        const sqlToFetchProductsByCategoryId: string = "SELECT * FROM products WHERE category_id = $1"; 
+
+        const { rows } = await database.query(sqlToFetchProductsByCategoryId, [categoryId]);
+
+        response.status(200).json({products: rows}); 
+
+    }
 
 }
 
