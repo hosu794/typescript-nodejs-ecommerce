@@ -20,7 +20,7 @@ class App {
         const paypal: PaypalRestApiConfig = new PaypalRestApiConfig()
     }
 
-    public listen(): void {
+    private listen(): void {
         this.app.listen(5000, () => {
             console.log(`App listening on the port 5000}`)
         })

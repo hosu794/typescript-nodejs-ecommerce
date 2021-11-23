@@ -1,8 +1,10 @@
 import express from "express";
 import jwt, { JwtPayload } from 'jsonwebtoken'; 
-import { consumers } from "stream";
 import DatabaseConnection from "../config/database";
 import { TokenInteface } from "./authentication.interface";
+
+import { QueryResult } from 'pg'; 
+import { DatabaseEnity } from "../config/database.interface";
 
 let Token: TokenInteface;
 
@@ -35,23 +37,34 @@ Token = class Token {
     }
 
     static checkRole (roles: Array<string>) {
+
         return async (request: express.Request, response: express.Response, next: express.NextFunction) => {
 
             const token: any = this.extractToken(request); 
 
             const tokenResponse: string | JwtPayload = jwt.verify(token, 'secret'); 
 
-            const database = new DatabaseConnection().getDB(); 
+            const database: DatabaseEnity = new DatabaseConnection().getDB(); 
             
-            const sqlQuery: string = "SELECT roles.title FROM users JOIN roles ON users.user_id = roles.user_id WHERE users.user_id = $1"; 
+            const sqlQuery: string = "SELECT roles.title as title FROM users JOIN roles ON users.user_id = roles.user_id WHERE users.user_id = $1"; 
 
             //@ts-ignore
-            const results: any = await database.query(sqlQuery, [tokenResponse.id]);
+            const results: QueryResult = await database.query(sqlQuery, [tokenResponse.id]);
 
-            console.log(roles.indexOf(results.rows[0].title))
+            const resultRows: Array<String> = results.rows.map((item: any) => item.title); 
 
-           if(roles.indexOf(results.rows[0].title) > -1 ) next();
-           else response.sendStatus(401).send(); 
+            let peekArray: Array<String> = []; 
+
+            roles.forEach((item: string) => {
+                
+                if(resultRows.indexOf(item) !== -1) peekArray.push(item);                               
+
+                if(peekArray.length !== 0) {
+                    next(); 
+                } else {
+                    response.status(401).send({message: "Invalid role."}); 
+                }
+            }) 
 
         }
     }
