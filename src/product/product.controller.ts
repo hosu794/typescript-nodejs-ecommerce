@@ -56,8 +56,6 @@ class ProductController implements Controller {
 
         const product: ProductRequest = request.body;
 
-        console.log("Body", request.body); 
-
         const categoryId: number = Number(request.params.id); 
 
         const sqlToCheck: string = "SELECT * FROM categories WHERE category_id = $1"; 

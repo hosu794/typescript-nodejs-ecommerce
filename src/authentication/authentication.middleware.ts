@@ -18,8 +18,8 @@ Token = class Token {
 
             const vericationResponse: string | JwtPayload = jwt.verify(token, 'secret'); 
             //@ts-ignore
-            request.user = vericationResponse;
-            
+            request.user = vericationResponse;        
+
             next(); 
         } catch (error) {
             response.status(401).json({message: 'Wrong token!'}); 
@@ -41,8 +41,17 @@ Token = class Token {
         return async (request: express.Request, response: express.Response, next: express.NextFunction) => {
 
             const token: any = this.extractToken(request); 
+            
+            let tokenResponse;
 
-            const tokenResponse: string | JwtPayload = jwt.verify(token, 'secret'); 
+            try {
+                const vericationResponse: string | JwtPayload = jwt.verify(token, 'secret'); 
+                //@ts-ignore
+                request.user = vericationResponse;
+                tokenResponse = vericationResponse;        
+            } catch (error) {
+                response.status(401).json({message: 'Wrong token!'}); 
+            }
 
             const database: DatabaseEnity = new DatabaseConnection().getDB(); 
             
@@ -56,15 +65,17 @@ Token = class Token {
             let peekArray: Array<String> = []; 
 
             roles.forEach((item: string) => {
-                
                 if(resultRows.indexOf(item) !== -1) peekArray.push(item);                               
-
-                if(peekArray.length !== 0) {
-                    next(); 
-                } else {
-                    response.status(401).send({message: "Invalid role."}); 
-                }
             }) 
+
+            //@ts-ignore
+            console.log(request.user); 
+
+            if(peekArray.length !== 0) {
+                next(); 
+            } else {
+                response.status(401).send({message: "Invalid role."}); 
+            }
 
         }
     }

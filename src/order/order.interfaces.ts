@@ -4,10 +4,10 @@ export interface OrderProductRequest {
 }
 
 export interface OrderStatusRequest {
-    orderStatusNumber: OrderStatus;
+    status: OrderStatusEnum;
 }
 
-export enum OrderStatus {
+export enum OrderStatusEnum {
     PENDING = 0, 
     AWAITING_PAYMENT = 1, 
     AWAITING_PICKUP = 2, 
