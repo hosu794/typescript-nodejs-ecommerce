@@ -15,3 +15,9 @@ export interface TokenInteface {
     extractToken(req: express.Request): any;
     checkRole(roles: Array<string>): any; 
 }
+
+export interface RequestUser {
+    id: number;
+    iat: number; 
+    exp: number; 
+}
