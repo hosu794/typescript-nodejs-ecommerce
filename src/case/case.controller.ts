@@ -39,21 +39,31 @@ class CaseController implements Controller {
 
         if(!isCaseExist) response.status(404).json({message: "Case exists!"}); 
 
-        const sqlToGetAllCaseProducts: string = "SELECT * FROM case_products WHERE user_id = $1"; 
+        const sqlToGetCurrentCaseId = "SELECT * FROM cases WHERE user_id = $1"; 
 
-        const sqlToDeleteCase: string = "DROP orders WHERE user_id = $1"; 
+        const result = await this.database.query(sqlToGetCurrentCaseId, [currentUserId]);
 
-        const resultProductsInCase: QueryResult = await this.database.query(sqlToGetAllCaseProducts, [currentUserId]); 
+        const currentCaseId = result.rows[0].case_id; 
+
+        const sqlToGetAllCaseProducts: string = "SELECT * FROM case_products WHERE case_id = $1"; 
+
+        const sqlToDeleteCase: string = "DELETE FROM cases WHERE user_id = $1"; 
+
+        const resultProductsInCase: QueryResult = await this.database.query(sqlToGetAllCaseProducts, [currentCaseId]); 
+
+        console.log("Debug 1."); 
 
         if(resultProductsInCase.rowCount === 0) {
 
+            console.log('Debug row count equals 0');
+            
             await this.database.query(sqlToDeleteCase, [currentUserId]); 
 
             response.status(202).json({message: "Case deleted successfully!"}); 
 
         } else {
 
-            const sqlToDeleteCaseProduct: string = "DROP case_products WHERE user_id = $1 AND product_id = $2"; 
+            const sqlToDeleteCaseProduct: string = "DELETE FROM case_products WHERE user_id = $1 AND product_id = $2"; 
 
             resultProductsInCase.rows.forEach( async (item: ProductResponse) => {
                 
@@ -66,7 +76,6 @@ class CaseController implements Controller {
             response.status(202).json({message: 'Case deleted successfully'}); 
 
         }
-
 
     }
 
@@ -119,7 +128,6 @@ class CaseController implements Controller {
         const sqlToAddCaseProducts: string = "INSERT INTO case_products(case_id, product_id, quantity) VALUES ($1, $2, $3)"; 
 
 
-
         const sqlToUpdateCaseProduct: string = "UPDATE case_products SET quantity = $1 WHERE case_id = $1 AND product_id = $2"; 
 
         productIds.forEach( async (item: CaseRequestItem) => {
@@ -138,7 +146,6 @@ class CaseController implements Controller {
 
             } else {
                 
-
                 await this.database.query(sqlToAddCaseProducts, [currentCaseId, item.product_id, item.quantity]); 
 
             }
@@ -149,12 +156,9 @@ class CaseController implements Controller {
 
     }
 
-
-
-
     private deleteProductFromCase = async (request: express.Request, response: express.Response) => {
 
-        const productIds: Array<number> = request.body; 
+        const productIds: Array<CaseRequestItem> = request.body; 
 
         //@ts-ignore 
         const currentUserId: number = Number(request.user.id); 
@@ -167,13 +171,20 @@ class CaseController implements Controller {
 
         const result = await this.database.query(sqlToGetOrderIdByCurrentUser, [currentUserId]); 
 
-        const currentCaseId = result.rows[0].orderId; 
+        const currentCaseId = result.rows[0].case_id; 
 
         const sqlToDeleteProductInOrder: string = "DELETE FROM case_products WHERE case_id = $1 AND product_id = $2"; 
 
-        productIds.forEach( async (productId: number) => {
+        const sqlToUpdateProductCase: string = "UPDATE case_products SET quantity = $1 WHERE case_id = $1 AND product_id = $2 RETURNING *"; 
 
-            await this.database.query(sqlToDeleteProductInOrder, [currentCaseId, productId]);
+        productIds.forEach( async (item: CaseRequestItem) => {
+
+            const updatedValue: QueryResult = await this.database.query(sqlToDeleteProductInOrder, [currentCaseId, item.product_id]);
+
+            //Delete product from case if quantity equals 0. 
+            if(updatedValue.rows[0].quantity === 0) {
+                await this.database.query(sqlToDeleteProductInOrder, [currentCaseId, item.product_id]); 
+            } 
 
         })
 
