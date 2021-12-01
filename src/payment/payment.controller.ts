@@ -3,7 +3,7 @@ import { QueryResult } from 'pg';
 import Controller from "../interfaces/controller.interface";
 import Pool from 'pg'; 
 import DatabaseConnection from '../config/database';
-import paypal, { Item, order, Payment, payment as PaypalPayment } from 'paypal-rest-sdk'
+import paypal, { Item, order, payment, Payment, payment as PaypalPayment } from 'paypal-rest-sdk'
 
 import { ProductResponse } from '../product/product.interfaces'; 
 
@@ -19,7 +19,8 @@ class PaymentController implements Controller {
 
     private initializeRoutes() {
 
-        this.router.post(`${this.path}/order/:id`, this.createPayment); 
+        this.router.post(`${this.path}/order/:id`, this.createPayment);
+        this.router.get(`${this.path}/success`, this.successPayment); 
 
     }
 
@@ -35,19 +36,13 @@ class PaymentController implements Controller {
 
         const sqlToGetAllProducts: string = "SELECT * FROM products JOIN order_product on products.product_id = order_product.product_id WHERE order_id = $1";
         
-        console.log('Order id:', orderId);
-
         const resultOfProducts: QueryResult = await this.database.query(sqlToGetAllProducts, [orderId]);
         
-        console.log(resultOfProducts); 
-
         let totalValueToPay: number = 0; 
 
         resultOfProducts.rows.map((item: ProductResponse) =>  {
             totalValueToPay = totalValueToPay + Number(item.price); 
         }); 
-
-        console.log(`Total value: ${totalValueToPay}`);
 
         const create_payment: Payment = {
             intent: 'sale', 
@@ -55,8 +50,8 @@ class PaymentController implements Controller {
                 payment_method: 'paypal'
             },
             redirect_urls: {
-                return_url: "http://localhost:3000/success", 
-                cancel_url: "http://localhost:300/cancel"
+                return_url: "http://localhost:5000/payments/success", 
+                cancel_url: "http://localhost:5000/payments/cancel"
             },
             transactions: [{
                 amount: {
@@ -65,7 +60,6 @@ class PaymentController implements Controller {
                 },
                 description: "Current Case"
             }]
-
         }
 
         paypal.payment.create(create_payment, (error: any, payment: any) => {
@@ -81,6 +75,29 @@ class PaymentController implements Controller {
             }
         })
 
+
+    }
+
+    private successPayment = async (request: express.Request, response: express.Response) => {
+      
+        const payerId: any = request.query.PayerID;
+        const paymentId: string = String(request.query.paymentId);
+
+        const execute_payment_json = {
+            "payer_id": payerId,
+          };
+
+        
+          paypal.payment.execute(paymentId, execute_payment_json, function (error, payment) {
+            //When error occurs when due to non-existent transaction, throw an error else log the transaction details in the console then send a Success string reposponse to the user.
+          if (error) {
+              console.log(error.response);
+              throw error;
+          } else {
+              console.log(JSON.stringify(payment));
+              response.send('Success');
+          }
+      });
 
     }
 
