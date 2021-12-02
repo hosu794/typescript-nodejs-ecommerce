@@ -1,4 +1,4 @@
-import express from 'express'; 
+import express, { NextFunction } from 'express'; 
 import { QueryResult } from 'pg';
 import Controller from "../interfaces/controller.interface";
 import Pool from 'pg'; 
@@ -6,6 +6,8 @@ import DatabaseConnection from '../config/database';
 import paypal, { Item, order, payment, Payment, payment as PaypalPayment } from 'paypal-rest-sdk'
 
 import { ProductResponse } from '../product/product.interfaces'; 
+import { PaymentCredentials } from './payment.interface';
+import { OrderStatusEnum } from '../order/order.interfaces';
 
 class PaymentController implements Controller {
     public readonly path: string = "/payments"; 
@@ -24,7 +26,7 @@ class PaymentController implements Controller {
 
     }
 
-    private createPayment = async (request: express.Request, response: express.Response) => {
+    private createPayment = async (request: express.Request, response: express.Response, next: NextFunction) => {
 
         const orderId: number = Number(request.params.id); 
 
@@ -50,7 +52,7 @@ class PaymentController implements Controller {
                 payment_method: 'paypal'
             },
             redirect_urls: {
-                return_url: "http://localhost:5000/payments/success", 
+                return_url: `http://localhost:5000/payments/success?currency=USD&total=${String(totalValueToPay)}&orderId=${orderId}`, 
                 cancel_url: "http://localhost:5000/payments/cancel"
             },
             transactions: [{
@@ -75,7 +77,6 @@ class PaymentController implements Controller {
             }
         })
 
-
     }
 
     private successPayment = async (request: express.Request, response: express.Response) => {
@@ -83,19 +84,29 @@ class PaymentController implements Controller {
         const payerId: any = request.query.PayerID;
         const paymentId: string = String(request.query.paymentId);
 
+        const currency: string = String(request.query.currency); 
+        const total: number = Number(request.query.total); 
+        const orderId: number = Number(request.query.orderId); 
+
         const execute_payment_json = {
             "payer_id": payerId,
           };
-
         
-          paypal.payment.execute(paymentId, execute_payment_json, function (error, payment) {
+          paypal.payment.execute(paymentId, execute_payment_json, async (error, payment) => {
             //When error occurs when due to non-existent transaction, throw an error else log the transaction details in the console then send a Success string reposponse to the user.
           if (error) {
               console.log(error.response);
               throw error;
           } else {
-              console.log(JSON.stringify(payment));
-              response.send('Success');
+
+            const sqlToCreatePayment: string = "INSERT INTO payments(currency, total, order_id) VALUES ($1, $2, $3)"; 
+            
+            await this.database.query(sqlToCreatePayment, [currency, total, orderId]); 
+            
+            const sqlToUpdateOrder: string = "UPDATE orders SET order_status = $1 WHERE order_id = $2"; 
+            await this.database.query(sqlToUpdateOrder, [OrderStatusEnum.AWAITING_PICKUP, orderId]); 
+
+            response.send('Payment has created successfully.');
           }
       });
 
