@@ -5,7 +5,6 @@ import Pool from 'pg'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'; 
 import {  UserLogin } from "./authentication.interface";
-import Token from "./authentication.middleware";
 
 class AuthenticationController implements Controller {
     constructor() {

@@ -15,10 +15,10 @@ class UserController implements Controller {
     public router: Router = Router(); 
 
     private initializeRoutes() {
-        this.router.get(this.path,  [Token.verifyToken, Token.checkRole(["USER"])], this.getAllUsers)
+        this.router.get(this.path,  [Token.checkRole(["USER"])], this.getAllUsers)
     }
 
-    private getAllUsers = async (request: Request, response: Response, next: NextFunction) => {
+    public getAllUsers = async (request: Request, response: Response) => {
 
         const sql = "select users.user_id , user_firstname, user_lastname, user_nickname, address_id , country, province, city, street, street_number, post_code from users join addresses on users.user_id  = addresses.user_id;"; 
         

@@ -1,5 +1,3 @@
-import { isNumber, IsString, isString } from 'class-validator'
-
 interface User {
     id: number; 
     firstName: string;
