@@ -6,7 +6,7 @@
   "scripts": {
     "start": "nodemon src/app.ts",
     "build": "tsc --project ./",
-    "test:unit": "NODE_ENV=test jest --forceExit"
+    "test:unit": "NODE_ENV=test jest --forceExit --watchAll --detectOpenHandles"
   },
   "keywords": [],
   "author": "",
