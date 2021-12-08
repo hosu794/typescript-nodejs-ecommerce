@@ -19,6 +19,7 @@ describe('user controller', () => {
 
         database.query("DELETE FROM categories WHERE title = 'Toys'");
         database.query("DELETE FROM categories WHERE title ='Home Updated'"); 
+        database.query("DELETE FROM categories WHERE title ='Home'"); 
 
         const insertResult: QueryResult = await database.query("INSERT INTO categories(title) VALUES('Home') RETURNING *");
         
@@ -86,5 +87,7 @@ describe('user controller', () => {
         expect(response.status).toBe(200); 
 
     })
+
+    
 
 })
