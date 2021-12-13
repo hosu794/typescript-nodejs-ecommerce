@@ -51,8 +51,6 @@ class CaseController implements Controller {
 
         const resultProductsInCase: QueryResult = await this.database.query(sqlToGetAllCaseProducts, [currentCaseId]); 
 
-        console.log("Debug 1."); 
-
         if(resultProductsInCase.rowCount === 0) {
 
             console.log('Debug row count equals 0');

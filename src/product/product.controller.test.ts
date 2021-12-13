@@ -40,10 +40,31 @@ describe('product controller',   () => {
 
     it('should resolve get product by id',  async () => {
         
-        const response = await supertest(server.getServer()).get("/products/3").set('Authorization', 'Bearer ' + token);
+        const resultInsertCategory: QueryResult = await database.query("INSERT INTO categories(title) VALUES($1) RETURNING * ", ['Cars']); 
+
+        const categoryId = resultInsertCategory.rows[0].category_id; 
+        
+        console.log("Category id: ", categoryId);
+
+        const sqlToCreateProduct: string = "INSERT INTO products(name, category_id, model_year, price) VALUES($1, $2, $3, $4) RETURNING *"; 
+
+        const product = {
+            name: 'BMW M5', 
+            modelYear: 2012, 
+            price: 10000
+        }
+
+        const resultProductInsert = await database.query(sqlToCreateProduct, [product.name, categoryId, product.modelYear, product.price]); 
+        
+        const productId = resultProductInsert.rows[0].product_id; 
+
+        const response = await supertest(server.getServer()).get(`/products/${productId}`).set('Authorization', 'Bearer ' + token);
 
         expect(response.status).toBe(200); 
-        expect(response.body).not.toBeNull();
+
+        await database.query("DELETE FROM categories WHERE category_id = $1", [categoryId]); 
+
+        await database.query("DELETE FROM products WHERE product_id = $1", [productId]); 
 
     });
 
