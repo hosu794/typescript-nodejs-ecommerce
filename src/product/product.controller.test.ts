@@ -5,7 +5,6 @@ import server from '../app'
 import DatabaseConnection from '../config/database';
 import { ProductRequest } from './product.interfaces';
 
-
 describe('product controller',   () => {
 
     let token: string;  
@@ -13,19 +12,49 @@ describe('product controller',   () => {
     let udpdateProcuctId: number; 
     
     const database = new DatabaseConnection().getDB(); 
+
+    afterAll( async () => {
+
+        database.query("DELETE FROM products WHERE name = 'Dell Computer' OR name = 'Lenove Computer' OR name = 'Lenove Computer Updated'"); 
+        database.query("DELETE FROM users WHERE user_nickname = $1", ["lewon123"]); 
+        database.query("DELETE FROM addresses WHERE province = $1", ['Pdsaodkarpackie']); 
+
+    })
     
      beforeAll( async () => {
-        
-        database.query("DELETE FROM products WHERE name = 'Dell Computer' OR name = 'Lenove Computer' OR name = 'Lenove Computer Updated'"); 
 
         const loginCredentials = {
-            nickname: "szczepan123", 
+            nickname: "lewon123", 
             password: "password123"
         }
+    
+      const registerCredentials = {
+            firstname: "Robert", 
+            lastname: "lewon", 
+            nickname: "lewon123", 
+            email: "levon123@gmail.com", 
+            password: "password123", 
+            country: "dPoland", 
+            city: "Mdsadasinsk Mazowiecki", 
+            street: "Stankdsadsaowizna", 
+            street_number: 322, 
+            post_code: "05-303",
+            province: "Pdsaodkarpackie"
+        }
 
-        const loginResponse = await supertest(server.getServer()).post('/authentication/login').send(loginCredentials); 
+            await supertest(server.getServer()).post('/authentication/register').send(registerCredentials);
+    
+            const currentCreatedUser = await database.query("SELECT * FROM users WHERE user_nickname = $1", ['lewon123']); 
 
-        token = loginResponse.body.token; 
+            const userId = currentCreatedUser.rows[0].user_id; 
+
+            console.log(`User id: ${userId}`);
+
+            const result = await database.query("INSERT INTO roles(title, user_id) VALUES ($1, $2) RETURNING *", ['dsadad', userId]);
+           
+            const loginResponse = await supertest(server.getServer()).post('/authentication/login').send(loginCredentials); 
+
+            token = loginResponse.body.token; 
     })
 
 
@@ -70,13 +99,17 @@ describe('product controller',   () => {
 
     it('should resolve creating product', async () => {
 
+        const createdCategory = await database.query("INSERT INTO categories(title) VALUES($1) RETURNING *", ['Good Computers']);
+        
+        const createdCategoryId = createdCategory.rows[0].category_id; 
+
         const productRequest: ProductRequest = {
             modelYear: 2020, 
             name: "Lenove Computer", 
             price: 1200
         }
         
-        const response = await supertest(server.getServer()).post("/products/2").set('Authorization', 'Bearer ' + token).send(productRequest); 
+        const response = await supertest(server.getServer()).post(`/products/${createdCategoryId}`).set('Authorization', 'Bearer ' + token).send(productRequest); 
 
         expect(response.status).toBe(200); 
         expect(response.body.message).toBe('Product has created successfully!');;  
@@ -87,8 +120,6 @@ describe('product controller',   () => {
 
         const productResponseInsert: QueryResult = await database.query("INSERT INTO products(name, category_id, model_year, price) VALUES($1, $2, $3, $4) RETURNING *", ["Dell Computer", 2, 2010, 440]); 
         udpdateProcuctId = productResponseInsert.rows[0].product_id;
-
-
         
         const productUpdateRequest: ProductRequest = {
             modelYear: 2020, 
@@ -127,6 +158,5 @@ describe('product controller',   () => {
         expect(response.status).toBe(200); 
 
     })
-
 
 })

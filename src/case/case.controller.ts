@@ -53,8 +53,7 @@ class CaseController implements Controller {
 
         if(resultProductsInCase.rowCount === 0) {
 
-            console.log('Debug row count equals 0');
-            
+
             await this.database.query(sqlToDeleteCase, [currentUserId]); 
 
             response.status(202).json({message: "Case deleted successfully!"}); 
@@ -125,7 +124,6 @@ class CaseController implements Controller {
 
         const sqlToAddCaseProducts: string = "INSERT INTO case_products(case_id, product_id, quantity) VALUES ($1, $2, $3)"; 
 
-
         const sqlToUpdateCaseProduct: string = "UPDATE case_products SET quantity = $1 WHERE case_id = $1 AND product_id = $2"; 
 
         productIds.forEach( async (item: CaseRequestItem) => {
@@ -138,12 +136,10 @@ class CaseController implements Controller {
 
                 const sumOfQuantity: number = quantity + item.quantity; 
 
-                console.log(sumOfQuantity);
-
                 await this.database.query(sqlToUpdateCaseProduct, [currentCaseId, item.product_id]);
 
             } else {
-                
+
                 await this.database.query(sqlToAddCaseProducts, [currentCaseId, item.product_id, item.quantity]); 
 
             }

@@ -23,7 +23,8 @@ describe('order controller tests',   () => {
 
         database.query("DELETE FROM orders", []); 
         database.query("DELETE FROM order_product", []); 
-
+        database.query("DELETE FROM users WHERE user_nickname = $1", ["lewon123"]); 
+        database.query("DELETE FROM addresses WHERE province = $1", ['Pdsaodkarpackie']); 
      })
 
      beforeAll( async () => {
@@ -31,11 +32,29 @@ describe('order controller tests',   () => {
         database.query("DELETE FROM products WHERE name = 'Dell Computer' OR name = 'Lenove Computer' OR name = 'Lenove Computer Updated'"); 
 
         const loginCredentials = {
-            nickname: "szczepan123", 
+            nickname: "lewon123", 
             password: "password123"
+    }
+    
+    const registerCredentials = {
+            firstname: "Robert", 
+            lastname: "lewon", 
+            nickname: "lewon123", 
+            email: "levon123@gmail.com", 
+            password: "password123", 
+            country: "dPoland", 
+            city: "Mdsadasinsk Mazowiecki", 
+            street: "Stankdsadsaowizna", 
+            street_number: 322, 
+            post_code: "05-303",
+            province: "Pdsaodkarpackie"
         }
 
-        const loginResponse = await supertest(server.getServer()).post('/authentication/login').send(loginCredentials); 
+            await supertest(server.getServer()).post('/authentication/register').send(registerCredentials);
+    
+            const loginResponse = await supertest(server.getServer()).post('/authentication/login').send(loginCredentials); 
+
+            token = loginResponse.body.token;
 
         token = loginResponse.body.token; 
     })
@@ -75,7 +94,7 @@ describe('order controller tests',   () => {
 
     it('should resolve get order by id', async () => {
 
-        const currentUser = await database.query("SELECT * FROM users WHERE user_nickname = $1", ["szczepan123"]); 
+        const currentUser = await database.query("SELECT * FROM users WHERE user_nickname = $1", ["lewon123"]); 
 
         const currentUserId = currentUser.rows[0].user_id; 
 
@@ -107,15 +126,14 @@ describe('order controller tests',   () => {
        
         orderId = orderInsertResponse.rows[0].order_id; 
 
-       productsIds.map( async (item: OrderProductRequest) => {
-             
-            await database.query("INSERT INTO order_product(order_Id, product_id, quantity) VALUES($1, $2, $3)", [orderId, item.productId, item.quantity]);
+        productsIds.map( async (item: OrderProductRequest) => {
+                
+                await database.query("INSERT INTO order_product(order_Id, product_id, quantity) VALUES($1, $2, $3)", [orderId, item.productId, item.quantity]);
 
-       }); 
+        }); 
 
        const response = await supertest(server.getServer()).get(`/orders/${orderId}`).send(productsIds).set('Authorization', 'Bearer ' + token);
        console.log(response.body);
-
 
        expect(response.body.result.order_id).toBe(orderId); 
 

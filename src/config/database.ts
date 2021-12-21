@@ -18,7 +18,6 @@ class DatabaseConnection implements IDatabaseConnection {
     }
 
     public getDB(): Pool.Pool {
-        console.log(`Connected with database`)
         return this.db
     }
 }

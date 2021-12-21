@@ -9,11 +9,29 @@ describe('user controller', () => {
     beforeAll( async () => {
 
         const loginCredentials = {
-            nickname: "szczepan123", 
+            nickname: "lewon123", 
             password: "password123"
+    }
+    
+    const registerCredentials = {
+            firstname: "Robert", 
+            lastname: "lewon", 
+            nickname: "lewon123", 
+            email: "levon123@gmail.com", 
+            password: "password123", 
+            country: "dPoland", 
+            city: "Mdsadasinsk Mazowiecki", 
+            street: "Stankdsadsaowizna", 
+            street_number: 322, 
+            post_code: "05-303",
+            province: "Pdsaodkarpackie"
         }
 
-        const loginResponse = await supertest(server.getServer()).post('/authentication/login').send(loginCredentials); 
+            await supertest(server.getServer()).post('/authentication/register').send(registerCredentials);
+    
+            const loginResponse = await supertest(server.getServer()).post('/authentication/login').send(loginCredentials); 
+
+            token = loginResponse.body.token;
 
         token = loginResponse.body.token; 
     })

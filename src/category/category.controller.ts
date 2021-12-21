@@ -20,10 +20,10 @@ class CategoryController implements Controller {
 
     private initializeControllers() {
         this.router.get(`${this.path}`, Token.checkRole(['ADMIN', 'USER']),  this.getAllCategories); 
-        this.router.get(`${this.path}/:id`,[Token.verifyToken, Token.checkRole(['ADMIN'])]  ,this.getCategoryById); 
-        this.router.post(`${this.path}`, [Token.verifyToken, Token.checkRole(['ADMIN'])], this.createCategory); 
-        this.router.put(`${this.path}/:id`, Token.checkRole(['ADMIN']), this.updateCategory); 
-        this.router.delete(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(['ADMIN'])], this.deleteCategory); 
+        this.router.get(`${this.path}/:id`,Token.checkRole(['ADMIN', 'USER'])  ,this.getCategoryById); 
+        this.router.post(`${this.path}`, Token.checkRole(['ADMIN', 'USER']), this.createCategory); 
+        this.router.put(`${this.path}/:id`, Token.checkRole(['ADMIN', 'USER']), this.updateCategory); 
+        this.router.delete(`${this.path}/:id`, Token.checkRole(['ADMIN', 'USER']), this.deleteCategory); 
     }
 
     getAllCategories = async (request: express.Request, response: express.Response) => {
