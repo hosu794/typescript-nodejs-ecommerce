@@ -3,7 +3,6 @@ import supertest from 'supertest';
 import server from '../app'; 
 import DatabaseConnection from '../config/database';
 
-
 describe('user controller', () => {
 
     const database = new DatabaseConnection().getDB(); 
@@ -22,7 +21,7 @@ describe('user controller', () => {
         province: "Podkarpackie"
     }
 
-    beforeAll( async () => {
+    afterAll( async () => {
         await database.query("DELETE FROM users WHERE user_nickname = 'lewandowski123'"); 
     })
 

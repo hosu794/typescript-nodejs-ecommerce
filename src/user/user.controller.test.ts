@@ -1,10 +1,13 @@
 import supertest from 'supertest'; 
 
 import server from '../app'
+import DatabaseConnection from '../config/database';
 
 describe('user controller', () => {
 
     let token: string; 
+
+    const database = new DatabaseConnection().getDB(); 
 
     beforeAll( async () => {
 
@@ -34,6 +37,12 @@ describe('user controller', () => {
             token = loginResponse.body.token;
 
         token = loginResponse.body.token; 
+    })
+
+    afterAll( async () => {
+
+        await database.query("DELETE FROM users WHERE user_nickname = $1", ["lewon123"]); 
+
     })
 
 

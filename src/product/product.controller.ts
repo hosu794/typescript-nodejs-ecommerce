@@ -15,7 +15,7 @@ class ProductController implements Controller {
     }
 
     initializeRoutes = () => {
-        this.router.post(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(["ADMIN"])] , this.createProduct); 
+        this.router.post(`${this.path}/:id`, Token.checkRole(["ADMIN"]), this.createProduct); 
         this.router.get(`${this.path}`, [Token.verifyToken, Token.checkRole(["ADMIN"])], this.getAllProducts); 
         this.router.get(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(["ADMIN"])], this.getProductById);
         this.router.put(`${this.path}/:id`, Token.checkRole(["ADMIN"]), this.updateProduct); 
@@ -83,8 +83,6 @@ class ProductController implements Controller {
         const sqlToCheck: string = "select * from products where product_id = $1"; 
 
         const { rowCount } = await database.query(sqlToCheck, [productId]); 
-
-        console.log("Liczba rekordów :", rowCount);
 
         if(rowCount === 0) response.status(404).json({message: "Product didn't exists"}); 
 
