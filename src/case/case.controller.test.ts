@@ -1,7 +1,7 @@
 import DatabaseConnection from "../config/database";
 import server from '../app'
 import supertest from 'supertest'; 
-import { CaseRequest, CaseRequestProductIds } from "./case.interface";
+import { CaseRequest, CaseRequestItem, CaseRequestProductIds } from "./case.interface";
 
 describe('case controller', () => {
     
@@ -13,8 +13,11 @@ describe('case controller', () => {
     let product2Id: any;
     let product3Id: any;
     let product4Id: any;
+    let product5Id: any;
+    let product6Id: any; 
 
     let caseId: any; 
+    let caseUpdateId: any;
 
     const loginCredentials = {
         nickname: "lewon123", 
@@ -69,6 +72,9 @@ describe('case controller', () => {
         await database.query("DELETE FROM products WHERE name = $1", ['BMW M2 Super']);       
         await database.query("DELETE FROM products WHERE name = $1", ['BMW I3 Super']); 
         await database.query("DELETE FROM case_products WHERE case_id = $1", [caseId]); 
+        await database.query("DELETE FROM case_products WHERE case_id = $1", [caseUpdateId]);
+        await database.query("DELETE FROM products WHERE name = $1", ['Fiat 500']); 
+        await database.query("DELETE FROM cases WHERE case_id = $1", [caseUpdateId]); 
     })
 
         
@@ -136,13 +142,40 @@ describe('case controller', () => {
         await database.query("INSERT INTO case_products(case_id, product_id, quantity) VALUES($1, $2, $3)", [caseId, product3Id, 1]);
         await database.query("INSERT INTO case_products(case_id, product_id, quantity) VALUES($1, $2, $3)", [caseId, product4Id, 1]);
 
-        console.log(token);
-
         const response = await supertest(server.getServer()).delete("/cases").set('Authorization', 'Bearer ' + token).send(caseRequest); 
             
         expect(response.status).toBe(202); 
     });
 
+    it('should resolve add product to case', async () => {
+        
+        const currentUser = await database.query("SELECT * FROM users WHERE user_nickname = $1", ["lewon123"]); 
+        const userId = currentUser.rows[0].user_id; 
+
+        // const existingCase = await database.query("SELECT * FROM cases WHERE user_id = $1", [userId]); 
+        // const currentCaseId = existingCase.rows[0].case_id; 
+        // await database.query("DELETE FROM case_products WHERE case_id = $1", [currentCaseId]); 
+
+        await database.query("DELETE FROM cases WHERE user_id = $1", [userId]); 
+
+        const product5 = await database.query("INSERT INTO products(name, category_id, model_year, price) VALUES($1, $2, $3, $4) RETURNING *", ['Fiat 500', currentCategoryId, 2020, 1000000]);
+        product5Id = product5.rows[0].product_id; 
+
+        const productsToRequest: Array<CaseRequestItem> = [
+            {
+                product_id: product5Id, 
+                quantity: 1
+            }
+        ]
+
+        const createCaseResult = await database.query("INSERT INTO cases(user_id) VALUES ($1) RETURNING *", [currentUser.rows[0].user_id]); 
+         caseUpdateId = createCaseResult.rows[0].case_id; 
+
+        const response = await supertest(server.getServer()).post("/cases/products/add").set('Authorization', 'Bearer ' + token).send(productsToRequest); 
+
+        expect(response.body.message).toBe("Case's products updated!"); 
+        expect(response.status).toBe(201); 
+    });
 
     });
 

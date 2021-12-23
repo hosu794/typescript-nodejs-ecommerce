@@ -128,7 +128,7 @@ class CaseController implements Controller {
 
             const productWithId: QueryResult = await this.database.query(sqlToCheckIsCaseProductsExists, [currentCaseId, item.product_id]); 
 
-            if(productWithId) {
+            if(productWithId && productWithId.rowCount !== 0) {
 
                 const quantity: number = productWithId.rows[0].quantity; 
 
