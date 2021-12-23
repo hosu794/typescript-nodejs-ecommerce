@@ -15,7 +15,7 @@ describe('product controller', () => {
     const loginCredentials = {
         nickname: "lewon123", 
         password: "password123"
-   }
+    }
 
     const registerCredentials = {
             firstname: "Robert", 

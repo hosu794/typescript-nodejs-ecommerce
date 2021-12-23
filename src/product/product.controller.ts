@@ -19,7 +19,7 @@ class ProductController implements Controller {
         this.router.get(`${this.path}`, [Token.verifyToken, Token.checkRole(["ADMIN"])], this.getAllProducts); 
         this.router.get(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(["ADMIN"])], this.getProductById);
         this.router.put(`${this.path}/:id`, Token.checkRole(["ADMIN"]), this.updateProduct); 
-        this.router.delete(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(["ADMIN"])], this.deleteProduct); 
+        this.router.delete(`${this.path}/:id`,Token.checkRole(["ADMIN"]), this.deleteProduct); 
         this.router.get(`${this.path}/categories/:id`, this.getProductsByCategoryId); 
     }
 

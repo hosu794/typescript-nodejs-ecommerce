@@ -49,10 +49,10 @@ class CaseController implements Controller {
 
         const sqlToDeleteCase: string = "DELETE FROM cases WHERE user_id = $1"; 
 
+        
         const resultProductsInCase: QueryResult = await this.database.query(sqlToGetAllCaseProducts, [currentCaseId]); 
-
+        
         if(resultProductsInCase.rowCount === 0) {
-
 
             await this.database.query(sqlToDeleteCase, [currentUserId]); 
 
@@ -60,12 +60,10 @@ class CaseController implements Controller {
 
         } else {
 
-            const sqlToDeleteCaseProduct: string = "DELETE FROM case_products WHERE user_id = $1 AND product_id = $2"; 
+            const sqlToDeleteCaseProduct: string = "DELETE FROM case_products WHERE case_id = $1 AND product_id = $2"; 
 
             resultProductsInCase.rows.forEach( async (item: ProductResponse) => {
-                
-                await this.database.query(sqlToDeleteCaseProduct, [currentUserId, [item.product_id]])
-
+                    await this.database.query(sqlToDeleteCaseProduct, [currentCaseId, item.product_id])
             })
 
             await this.database.query(sqlToDeleteCase, [currentUserId]); 
