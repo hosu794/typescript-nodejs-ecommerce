@@ -9,6 +9,7 @@ import DatabaseConnection from "../config/database";
 import { ExpressRequestWithUser } from "../helpers/request.interfaces";
 import Token from "../authentication/authentication.middleware";
 import { ProductResponse } from "../product/product.interfaces";
+import AmountQuantityError from "../errors/amount-quanity-error";
 
 class CaseController implements Controller {
 
@@ -167,12 +168,20 @@ class CaseController implements Controller {
 
         const sqlToDeleteProductInOrder: string = "DELETE FROM case_products WHERE case_id = $1 AND product_id = $2"; 
 
-        const sqlToUpdateProductCase: string = "UPDATE case_products SET quantity = $1 WHERE case_id = $1 AND product_id = $2 RETURNING *"; 
+        const sqlToUpdateProductCase: string = "UPDATE case_products SET quantity = $1 WHERE case_id = $2 AND product_id = $3 RETURNING *"; 
 
         productIds.forEach( async (item: CaseRequestItem) => {
 
-            const updatedValue: QueryResult = await this.database.query(sqlToDeleteProductInOrder, [currentCaseId, item.product_id]);
+            const currentProduct: QueryResult = await this.database.query("SELECT * FROM case_products WHERE case_id = $1 AND product_id = $2", [currentCaseId, item.product_id]);
+            
+            const product = currentProduct.rows[0]; 
 
+            const amountQuantityAfterDeleted = product.quantity - item.quantity; 
+
+            if(amountQuantityAfterDeleted < 0) throw new AmountQuantityError("Quanity cannot be less than 0!"); 
+            
+            const updatedValue: QueryResult = await this.database.query(sqlToUpdateProductCase, [amountQuantityAfterDeleted, currentCaseId, product.product_id]);
+ 
             //Delete product from case if quantity equals 0. 
             if(updatedValue.rows[0].quantity === 0) {
                 await this.database.query(sqlToDeleteProductInOrder, [currentCaseId, item.product_id]); 

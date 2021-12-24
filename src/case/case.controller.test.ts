@@ -18,6 +18,7 @@ describe('case controller', () => {
 
     let caseId: any; 
     let caseUpdateId: any;
+    let deleteItemCaseId: any; 
 
     const loginCredentials = {
         nickname: "lewon123", 
@@ -75,6 +76,9 @@ describe('case controller', () => {
         await database.query("DELETE FROM case_products WHERE case_id = $1", [caseUpdateId]);
         await database.query("DELETE FROM products WHERE name = $1", ['Fiat 500']); 
         await database.query("DELETE FROM cases WHERE case_id = $1", [caseUpdateId]); 
+        await database.query("DELETE FROM cases WHERE case_id = $1", [deleteItemCaseId]); 
+        await database.query("DELETE FROM case_products WHERE case_id = $1", [deleteItemCaseId]);
+        await database.query("DELETE FROM products WHERE name = $1", ['Seat Toledo']); 
     })
 
         
@@ -152,10 +156,6 @@ describe('case controller', () => {
         const currentUser = await database.query("SELECT * FROM users WHERE user_nickname = $1", ["lewon123"]); 
         const userId = currentUser.rows[0].user_id; 
 
-        // const existingCase = await database.query("SELECT * FROM cases WHERE user_id = $1", [userId]); 
-        // const currentCaseId = existingCase.rows[0].case_id; 
-        // await database.query("DELETE FROM case_products WHERE case_id = $1", [currentCaseId]); 
-
         await database.query("DELETE FROM cases WHERE user_id = $1", [userId]); 
 
         const product5 = await database.query("INSERT INTO products(name, category_id, model_year, price) VALUES($1, $2, $3, $4) RETURNING *", ['Fiat 500', currentCategoryId, 2020, 1000000]);
@@ -175,6 +175,39 @@ describe('case controller', () => {
 
         expect(response.body.message).toBe("Case's products updated!"); 
         expect(response.status).toBe(201); 
+    });
+
+    it('should resolve delete product from case', async () => {
+        
+        const currentUser = await database.query("SELECT * FROM users WHERE user_nickname = $1", ["lewon123"]); 
+        const userId = currentUser.rows[0].user_id; 
+
+        const existingCase = await database.query("SELECT * FROM cases WHERE user_id = $1", [userId]); 
+        const currentCaseId = existingCase.rows[0].case_id; 
+        await database.query("DELETE FROM case_products WHERE case_id = $1", [currentCaseId]); 
+
+        await database.query("DELETE FROM cases WHERE user_id = $1", [userId]); 
+
+        const product6 = await database.query("INSERT INTO products(name, category_id, model_year, price) VALUES($1, $2, $3, $4) RETURNING *", ['Seat Leon', currentCategoryId, 2020, 1000000]);
+        product6Id = product6.rows[0].product_id; 
+
+        const productsToRequest: Array<CaseRequestItem> = [
+            {
+                product_id: product6Id, 
+                quantity: 1
+            }
+        ]
+
+        const createCaseResult = await database.query("INSERT INTO cases(user_id) VALUES ($1) RETURNING *", [currentUser.rows[0].user_id]); 
+        deleteItemCaseId = createCaseResult.rows[0].case_id; 
+
+        await database.query("INSERT INTO case_products(case_id, product_id, quantity) VALUES($1, $2, $3)", [deleteItemCaseId, product6Id, 1]);
+
+        const response = await supertest(server.getServer()).delete("/cases/products").set('Authorization', 'Bearer ' + token).send(productsToRequest); 
+
+        expect(response.status).toBe(202);
+        expect(response.body.message).toBe('Deleted records successfully!');
+    
     });
 
     });
