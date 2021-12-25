@@ -13,22 +13,24 @@ class App {
         this.app = express()
         this.listen()
 
-
         this.intitializeMiddlewares();
         this.initializeControllers(controllers);
         this.initializeErrorHandling();
-        const paypal: PaypalRestApiConfig = new PaypalRestApiConfig()
+        new PaypalRestApiConfig()
     }
 
     private listen(): void {
-        this.app.listen(5000, () => {
-            console.log(`App listening on the port 5000}`)
-        })
+
+        if (process.env.NODE_ENV !== 'test') {
+            this.app.listen(5000, () => {
+                console.log(`App listening on the port 5000}`)
+            })
+          }
+
+        
     }
 
-    private initializeErrorHandling() {
-
-    }
+    private initializeErrorHandling() {}
 
     private intitializeMiddlewares() {
         this.app.use(bodyParser.json())

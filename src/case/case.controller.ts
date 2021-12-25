@@ -9,6 +9,7 @@ import DatabaseConnection from "../config/database";
 import { ExpressRequestWithUser } from "../helpers/request.interfaces";
 import Token from "../authentication/authentication.middleware";
 import { ProductResponse } from "../product/product.interfaces";
+import AmountQuantityError from "../errors/amount-quanity-error";
 
 class CaseController implements Controller {
 
@@ -49,26 +50,21 @@ class CaseController implements Controller {
 
         const sqlToDeleteCase: string = "DELETE FROM cases WHERE user_id = $1"; 
 
+        
         const resultProductsInCase: QueryResult = await this.database.query(sqlToGetAllCaseProducts, [currentCaseId]); 
-
-        console.log("Debug 1."); 
-
+        
         if(resultProductsInCase.rowCount === 0) {
 
-            console.log('Debug row count equals 0');
-            
             await this.database.query(sqlToDeleteCase, [currentUserId]); 
 
             response.status(202).json({message: "Case deleted successfully!"}); 
 
         } else {
 
-            const sqlToDeleteCaseProduct: string = "DELETE FROM case_products WHERE user_id = $1 AND product_id = $2"; 
+            const sqlToDeleteCaseProduct: string = "DELETE FROM case_products WHERE case_id = $1 AND product_id = $2"; 
 
             resultProductsInCase.rows.forEach( async (item: ProductResponse) => {
-                
-                await this.database.query(sqlToDeleteCaseProduct, [currentUserId, [item.product_id]])
-
+                    await this.database.query(sqlToDeleteCaseProduct, [currentCaseId, item.product_id])
             })
 
             await this.database.query(sqlToDeleteCase, [currentUserId]); 
@@ -127,25 +123,22 @@ class CaseController implements Controller {
 
         const sqlToAddCaseProducts: string = "INSERT INTO case_products(case_id, product_id, quantity) VALUES ($1, $2, $3)"; 
 
-
         const sqlToUpdateCaseProduct: string = "UPDATE case_products SET quantity = $1 WHERE case_id = $1 AND product_id = $2"; 
 
         productIds.forEach( async (item: CaseRequestItem) => {
 
             const productWithId: QueryResult = await this.database.query(sqlToCheckIsCaseProductsExists, [currentCaseId, item.product_id]); 
 
-            if(productWithId) {
+            if(productWithId && productWithId.rowCount !== 0) {
 
                 const quantity: number = productWithId.rows[0].quantity; 
 
                 const sumOfQuantity: number = quantity + item.quantity; 
 
-                console.log(sumOfQuantity);
-
                 await this.database.query(sqlToUpdateCaseProduct, [currentCaseId, item.product_id]);
 
             } else {
-                
+
                 await this.database.query(sqlToAddCaseProducts, [currentCaseId, item.product_id, item.quantity]); 
 
             }
@@ -175,12 +168,20 @@ class CaseController implements Controller {
 
         const sqlToDeleteProductInOrder: string = "DELETE FROM case_products WHERE case_id = $1 AND product_id = $2"; 
 
-        const sqlToUpdateProductCase: string = "UPDATE case_products SET quantity = $1 WHERE case_id = $1 AND product_id = $2 RETURNING *"; 
+        const sqlToUpdateProductCase: string = "UPDATE case_products SET quantity = $1 WHERE case_id = $2 AND product_id = $3 RETURNING *"; 
 
         productIds.forEach( async (item: CaseRequestItem) => {
 
-            const updatedValue: QueryResult = await this.database.query(sqlToDeleteProductInOrder, [currentCaseId, item.product_id]);
+            const currentProduct: QueryResult = await this.database.query("SELECT * FROM case_products WHERE case_id = $1 AND product_id = $2", [currentCaseId, item.product_id]);
+            
+            const product = currentProduct.rows[0]; 
 
+            const amountQuantityAfterDeleted = product.quantity - item.quantity; 
+
+            if(amountQuantityAfterDeleted < 0) throw new AmountQuantityError("Quanity cannot be less than 0!"); 
+            
+            const updatedValue: QueryResult = await this.database.query(sqlToUpdateProductCase, [amountQuantityAfterDeleted, currentCaseId, product.product_id]);
+ 
             //Delete product from case if quantity equals 0. 
             if(updatedValue.rows[0].quantity === 0) {
                 await this.database.query(sqlToDeleteProductInOrder, [currentCaseId, item.product_id]); 

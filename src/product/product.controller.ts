@@ -15,11 +15,11 @@ class ProductController implements Controller {
     }
 
     initializeRoutes = () => {
-        this.router.post(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(["ADMIN"])] , this.createProduct); 
+        this.router.post(`${this.path}/:id`, Token.checkRole(["ADMIN"]), this.createProduct); 
         this.router.get(`${this.path}`, [Token.verifyToken, Token.checkRole(["ADMIN"])], this.getAllProducts); 
         this.router.get(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(["ADMIN"])], this.getProductById);
-        this.router.put(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(["ADMIN"])], this.updateProduct); 
-        this.router.delete(`${this.path}/:id`, [Token.verifyToken, Token.checkRole(["ADMIN"])], this.deleteProduct); 
+        this.router.put(`${this.path}/:id`, Token.checkRole(["ADMIN"]), this.updateProduct); 
+        this.router.delete(`${this.path}/:id`,Token.checkRole(["ADMIN"]), this.deleteProduct); 
         this.router.get(`${this.path}/categories/:id`, this.getProductsByCategoryId); 
     }
 
@@ -80,15 +80,13 @@ class ProductController implements Controller {
 
         const productId = Number(request.params.id); 
 
-        const sqlToCheck: string = "SELECT * FROM products WHERE product_id = $1"; 
+        const sqlToCheck: string = "select * from products where product_id = $1"; 
 
-        const { rowCount, rows } = await database.query(sqlToCheck, [productId]); 
+        const { rowCount } = await database.query(sqlToCheck, [productId]); 
 
         if(rowCount === 0) response.status(404).json({message: "Product didn't exists"}); 
 
         const sqlToUpdate: string = "UPDATE products SET name = $1, model_year = $2, price = $3 WHERE product_id = $4";
-
-        console.log(sqlToUpdate); 
 
         await database.query(sqlToUpdate, [product.name, product.modelYear, product.price, productId]);
         

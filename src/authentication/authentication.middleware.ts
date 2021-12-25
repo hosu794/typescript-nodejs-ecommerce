@@ -66,10 +66,8 @@ Token = class Token {
 
             roles.forEach((item: string) => {
                 if(resultRows.indexOf(item) !== -1) peekArray.push(item);                               
-            }) 
+            }); 
 
-            //@ts-ignore
-            console.log(request.user); 
 
             if(peekArray.length !== 0) {
                 next(); 
