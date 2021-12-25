@@ -20,7 +20,7 @@ class OrderController implements Controller {
     private initializeRoutes() {
         this.router.get(`${this.path}/current/user`, Token.verifyToken ,this.getOrdersByCurrentUser); 
         this.router.post(`${this.path}`, Token.checkRole(["USER", "ADMIN"]), this.addProductsToOrder); 
-        this.router.post(`${this.path}/change/order/status/:id`, [Token.verifyToken, Token.checkRole(["ADMIN", "USER"])], this.changeOrderStatus); 
+        this.router.post(`${this.path}/change/order/status/:id`, Token.checkRole(["ADMIN", "USER"]), this.changeOrderStatus); 
         this.router.get(`${this.path}/:id`, this.getOrderById);  
     }
 
@@ -86,7 +86,9 @@ class OrderController implements Controller {
 
         const result: QueryResult = await this.database.query(sqlToChangeOrderStatus, [orderStatusNumber.status, orderId]);
         
-        response.status(200).json({message: 'Order status has changed successfully'}); 
+
+        
+        response.json({message: 'Order status has changed successfully'}); 
 
     }
 
